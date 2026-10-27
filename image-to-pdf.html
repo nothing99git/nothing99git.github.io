@@ -1,0 +1,33 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="style.css"><title>Image to PDF – Convert JPG, PNG to one PDF free</title>
+<meta name="description" content="Combine multiple images into one PDF. Free, no upload, works in your browser."></head><body>
+<header class="nav"><a class="brand" href="index.html">FreeToolBox</a><a href="photo-signature-resizer.html">Photo &amp; Signature</a><a href="image-compressor.html">Image Compressor</a><a href="image-to-pdf.html">Image to PDF</a><a href="qr-code-generator.html">QR Code</a></header><main><h1>Image to PDF</h1><p class="sub">Multiple images ni oka PDF ga cheyandi. Order marchochu.</p>
+<section class="card"><label class="drop" for="file">Images select cheyandi<small>Okasari multiple select cheyochu</small><input id="file" type="file" accept="image/*" multiple></label>
+<ul class="list" id="list"></ul>
+<div class="row"><div><label for="size">Page size</label><select id="size"><option value="a4">A4</option><option value="fit">Image size ki fit</option></select></div>
+<div><label for="name">PDF peru</label><input id="name" type="text" value="images"></div></div>
+<button id="go" disabled>PDF create cheyyi</button><p class="stat" id="stat"></p></section>
+<div class="ad" aria-label="Advertisement">Ad space</div><footer>Privacy: files mee browser lone process avutayi. Emi upload / store cheyam.</footer></main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+const $=i=>document.getElementById(i);let items=[];
+function render(){const l=$('list');l.innerHTML='';items.forEach((it,i)=>{const li=document.createElement('li');
+ li.innerHTML='<img alt=""><span></span>';li.querySelector('img').src=it.url;li.querySelector('span').textContent=(i+1)+'. '+it.f.name;
+ [['↑',()=>mv(i,-1),i===0],['↓',()=>mv(i,1),i===items.length-1],['✕',()=>{items.splice(i,1);render()},false]].forEach(([t,fn,d])=>{const b=document.createElement('button');b.className='sec';b.textContent=t;b.disabled=d;b.setAttribute('aria-label',t==='✕'?'Remove':t==='↑'?'Move up':'Move down');b.onclick=fn;li.appendChild(b)});
+ l.appendChild(li)});$('go').disabled=!items.length}
+function mv(i,d){[items[i],items[i+d]]=[items[i+d],items[i]];render()}
+$('file').onchange=e=>{[...e.target.files].forEach(f=>items.push({f,url:URL.createObjectURL(f)}));e.target.value='';render()};
+const load=u=>new Promise((r,j)=>{const im=new Image();im.onload=()=>r(im);im.onerror=j;im.src=u});
+$('go').onclick=async()=>{
+ const {jsPDF}=window.jspdf;let pdf=null;$('stat').textContent='Create avutunnadi...';
+ try{for(let i=0;i<items.length;i++){
+  const im=await load(items[i].url),c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;
+  const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0);
+  const data=c.toDataURL('image/jpeg',0.92),land=c.width>c.height;let pw,ph,dw,dh,ox=0,oy=0;
+  if($('size').value==='fit'){pw=c.width*0.75;ph=c.height*0.75;dw=pw;dh=ph}
+  else{pw=land?841.89:595.28;ph=land?595.28:841.89;const m=20,s=Math.min((pw-2*m)/c.width,(ph-2*m)/c.height);dw=c.width*s;dh=c.height*s;ox=(pw-dw)/2;oy=(ph-dh)/2}
+  const o=pw>ph?'l':'p';
+  if(!pdf)pdf=new jsPDF({unit:'pt',format:[pw,ph],orientation:o});else pdf.addPage([pw,ph],o);
+  pdf.addImage(data,'JPEG',ox,oy,dw,dh)}
+  pdf.save(($('name').value||'images')+'.pdf');$('stat').textContent='PDF ready! Download ayyindi.';$('stat').className='stat ok'}
+ catch(e){$('stat').textContent='Error vachindi. Images malli select cheyandi.';$('stat').className='stat bad'}};
+</script></body></html>

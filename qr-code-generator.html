@@ -1,0 +1,20 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="style.css"><title>QR Code Generator – Free QR for link, text, UPI</title>
+<meta name="description" content="Create a QR code for any link, text or UPI payment string. Free, no sign-up, download as PNG."></head><body>
+<header class="nav"><a class="brand" href="index.html">FreeToolBox</a><a href="photo-signature-resizer.html">Photo &amp; Signature</a><a href="image-compressor.html">Image Compressor</a><a href="image-to-pdf.html">Image to PDF</a><a href="qr-code-generator.html">QR Code</a></header><main><h1>QR Code Generator</h1><p class="sub">Link, text, leka UPI id nundi QR code create cheyandi.</p>
+<section class="card"><label for="txt">Text leka link</label><textarea id="txt" rows="3" placeholder="https://example.com"></textarea>
+<div class="row"><div><label for="sz">Size (px)</label><select id="sz"><option>256</option><option selected>384</option><option>512</option><option>1024</option></select></div>
+<div><label for="fg">QR colour</label><input id="fg" type="color" value="#14213d"></div></div>
+<button id="go">QR create cheyyi</button></section>
+<section class="card" id="out" hidden aria-live="polite"><div id="qr" style="display:flex;justify-content:center"></div><button id="dl">Download PNG</button></section>
+<div class="ad" aria-label="Advertisement">Ad space</div><footer>Privacy: files mee browser lone process avutayi. Emi upload / store cheyam.</footer></main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+const $=i=>document.getElementById(i);
+$('go').onclick=()=>{const t=$('txt').value.trim();if(!t){alert('Mundu text leka link enter cheyandi.');return}
+ const s=+$('sz').value,box=$('qr');box.innerHTML='';
+ new QRCode(box,{text:t,width:s,height:s,colorDark:$('fg').value,colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+ const cv=box.querySelector('canvas');if(cv)cv.style.maxWidth='100%',cv.style.height='auto';
+ const im=box.querySelector('img');if(im){im.style.maxWidth='100%';im.style.height='auto'}
+ $('out').hidden=false};
+$('dl').onclick=()=>{const cv=$('qr').querySelector('canvas');if(!cv)return;const a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download='qr-code.png';a.click()};
+</script></body></html>

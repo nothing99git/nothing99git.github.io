@@ -1,0 +1,31 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="style.css"><title>Image Compressor – Reduce image size to 50KB, 100KB, 200KB</title>
+<meta name="description" content="Compress JPG, PNG or WEBP images to a target size in KB. Free, no upload, works in your browser."></head><body>
+<header class="nav"><a class="brand" href="index.html">FreeToolBox</a><a href="photo-signature-resizer.html">Photo &amp; Signature</a><a href="image-compressor.html">Image Compressor</a><a href="image-to-pdf.html">Image to PDF</a><a href="qr-code-generator.html">QR Code</a></header><main><h1>Image Compressor</h1><p class="sub">Image size ni mee target KB ki taggincha. Quality shaathamu keeping.</p>
+<section class="card"><label class="drop" for="file">Image select cheyandi<small>JPG, PNG, WEBP</small><input id="file" type="file" accept="image/*"></label>
+<div class="row"><div><label for="kb">Target size (KB)</label><input id="kb" type="number" min="5" value="100"></div>
+<div><label for="mw">Max width (px)</label><select id="mw"><option value="0">Original</option><option value="1920">1920</option><option value="1280" selected>1280</option><option value="800">800</option><option value="500">500</option></select></div></div>
+<button id="go" disabled>Compress cheyyi</button></section>
+<section class="card" id="out" hidden aria-live="polite"><canvas id="cv"></canvas><p class="stat" id="stat"></p><button id="dl">Download JPG</button></section>
+<div class="ad" aria-label="Advertisement">Ad space</div><footer>Privacy: files mee browser lone process avutayi. Emi upload / store cheyam.</footer></main>
+<script>
+const $=i=>document.getElementById(i);let img=null,blob=null,name='image',orig=0;
+$('file').onchange=e=>{const f=e.target.files[0];if(!f)return;name=f.name.replace(/\.[^.]+$/,'');orig=f.size;
+const im=new Image();im.onload=()=>{img=im;$('go').disabled=false};im.onerror=()=>alert('Ee image open avvaledu.');im.src=URL.createObjectURL(f)};
+const tb=q=>new Promise(r=>$('cv').toBlob(r,'image/jpeg',q));
+$('go').onclick=async()=>{
+ const mw=+$('mw').value,mx=+$('kb').value*1024;let w=img.naturalWidth,h=img.naturalHeight;
+ if(mw&&w>mw){h=Math.round(h*mw/w);w=mw}
+ const cv=$('cv');
+ const draw=(w,h)=>{cv.width=w;cv.height=h;const c=cv.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,w,h);c.drawImage(img,0,0,w,h)};
+ let best=null;
+ for(let s=1;s>0.2&&!best;s-=0.15){
+  draw(Math.round(w*s),Math.round(h*s));
+  let lo=0.1,hi=0.95;
+  for(let i=0;i<8;i++){const q=(lo+hi)/2,b=await tb(q);if(b.size<=mx){best=b;lo=q}else hi=q}
+ }
+ if(!best)best=await tb(0.1);
+ blob=best;const ok=blob.size<=mx;
+ $('stat').textContent=(orig/1024).toFixed(0)+' KB → '+(blob.size/1024).toFixed(1)+' KB'+(ok?'':' (target ki cheraledu, vere image try cheyandi)');
+ $('stat').className='stat '+(ok?'ok':'bad');$('out').hidden=false};
+$('dl').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name+'_compressed.jpg';a.click()};
+</script></body></html>
