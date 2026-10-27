@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exam Photo & Signature Resizer – Free, no upload</title>
+<meta name="description" content="Resize photo and signature to exact pixels and KB size for exam forms (IBPS, SSC, RRB and more). Works in your browser. Your image never leaves your phone.">
+<style>
+:root{--bg:#f6f4ee;--ink:#14213d;--muted:#5b6475;--line:#d9d5c8;--card:#fff;--accent:#e08a00;--accent-ink:#1a1200;--ok:#1d7a46;--bad:#b3261e}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1524;--ink:#eef0f6;--muted:#9aa3b8;--line:#2a3350;--card:#172036;--accent:#f2a21a;--accent-ink:#1a1200;--ok:#5fd18c;--bad:#ff8a80}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,"Noto Sans Telugu","Segoe UI",Roboto,sans-serif}
+main{max-width:720px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:1.6rem;line-height:1.25;margin:8px 0 4px}
+.sub{color:var(--muted);margin:0 0 20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
+label{display:block;font-weight:600;margin:0 0 6px}
+select,input[type=number]{width:100%;padding:10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
+.row{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px}
+.drop{display:block;border:2px dashed var(--line);border-radius:10px;padding:28px 12px;text-align:center;cursor:pointer;font-weight:600}
+.drop:focus-within,.drop:hover{border-color:var(--accent)}
+.drop input{position:absolute;opacity:0;width:1px;height:1px}
+.drop small{display:block;font-weight:400;color:var(--muted)}
+button{font:inherit;font-weight:700;padding:12px 18px;border:0;border-radius:6px;background:var(--accent);color:var(--accent-ink);cursor:pointer;width:100%;margin-top:14px}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+#out{display:none}
+#out.show{display:block}
+canvas{max-width:100%;height:auto;border:1px solid var(--line);background:#fff;display:block;margin:0 auto}
+.stat{margin:12px 0 0;font-weight:600;text-align:center}
+.ok{color:var(--ok)}.bad{color:var(--bad)}
+.note{font-size:.88rem;color:var(--muted)}
+.ad{min-height:90px;border:1px dashed var(--line);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.8rem;margin:16px 0}
+footer{font-size:.85rem;color:var(--muted);text-align:center;margin-top:28px}
+</style>
+</head>
+<body>
+<main>
+<h1>Exam Photo & Signature Resizer</h1>
+<p class="sub">Photo / signature ni exact pixels, KB size ki marchandi. Free. Mee image server ki upload avvadu, anni mee phone lone jarugutayi.</p>
+
+<section class="card">
+  <label for="preset">1. Form type select cheyandi</label>
+  <select id="preset">
+    <option value="200,230,20,50">IBPS Photo – 200×230 px, 20–50 KB</option>
+    <option value="140,60,10,20">IBPS Signature – 140×60 px, 10–20 KB</option>
+    <option value="200,230,20,50">Generic Photo – 200×230 px, 20–50 KB</option>
+    <option value="140,60,10,20">Generic Signature – 140×60 px, 10–20 KB</option>
+    <option value="custom">Custom (nenu enter chestanu)</option>
+  </select>
+  <div class="row">
+    <div><label for="w">Width (px)</label><input id="w" type="number" min="20" max="4000" value="200"></div>
+    <div><label for="h">Height (px)</label><input id="h" type="number" min="20" max="4000" value="230"></div>
+    <div><label for="minkb">Min size (KB)</label><input id="minkb" type="number" min="1" value="20"></div>
+    <div><label for="maxkb">Max size (KB)</label><input id="maxkb" type="number" min="1" value="50"></div>
+  </div>
+  <div style="margin-top:12px">
+    <label for="mode">Fit method</label>
+    <select id="mode">
+      <option value="crop">Crop (center nundi, distortion undadu)</option>
+      <option value="pad">Full image, white padding</option>
+      <option value="stretch">Stretch (exact size ki)</option>
+    </select>
+  </div>
+  <p class="note">Mee exam notification lo ichina size tho ee values match avutunnayo okasari check cheskondi. Values edit cheyochu.</p>
+</section>
+
+<section class="card">
+  <label class="drop" for="file">2. Image select cheyandi<small>JPG, PNG, WEBP</small>
+    <input id="file" type="file" accept="image/*">
+  </label>
+  <button id="go" disabled>Resize cheyyi</button>
+</section>
+
+<section class="card" id="out" aria-live="polite">
+  <canvas id="cv"></canvas>
+  <p class="stat" id="stat"></p>
+  <button id="dl">Download JPG</button>
+</section>
+
+<div class="ad" aria-label="Advertisement">Ad space (AdSense approval tarvata ikkada petti)</div>
+
+<footer>Privacy: image mee browser lone process avutundi. Emi store cheyam.</footer>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const preset=$('preset'),W=$('w'),H=$('h'),MIN=$('minkb'),MAX=$('maxkb'),mode=$('mode'),file=$('file'),go=$('go'),out=$('out'),cv=$('cv'),stat=$('stat'),dl=$('dl');
+let img=null,blob=null,name='image';
+
+preset.onchange=()=>{
+  if(preset.value==='custom')return;
+  const [w,h,mn,mx]=preset.value.split(',');
+  W.value=w;H.value=h;MIN.value=mn;MAX.value=mx;
+};
+[W,H,MIN,MAX].forEach(el=>el.oninput=()=>{preset.value='custom'});
+
+file.onchange=()=>{
+  const f=file.files[0];
+  if(!f)return;
+  name=f.name.replace(/\.[^.]+$/,'');
+  const url=URL.createObjectURL(f);
+  const im=new Image();
+  im.onload=()=>{img=im;go.disabled=false;go.textContent='Resize cheyyi ('+f.name+')'};
+  im.onerror=()=>{img=null;go.disabled=true;alert('Ee image open avvaledu. Vere JPG/PNG try cheyandi.')};
+  im.src=url;
+};
+
+function draw(w,h){
+  cv.width=w;cv.height=h;
+  const c=cv.getContext('2d');
+  c.fillStyle='#fff';c.fillRect(0,0,w,h);
+  const iw=img.naturalWidth,ih=img.naturalHeight,m=mode.value;
+  if(m==='stretch')c.drawImage(img,0,0,w,h);
+  else if(m==='crop'){
+    const s=Math.max(w/iw,h/ih),sw=w/s,sh=h/s;
+    c.drawImage(img,(iw-sw)/2,(ih-sh)/2,sw,sh,0,0,w,h);
+  }else{
+    const s=Math.min(w/iw,h/ih),dw=iw*s,dh=ih*s;
+    c.drawImage(img,(w-dw)/2,(h-dh)/2,dw,dh);
+  }
+}
+
+const toBlob=q=>new Promise(r=>cv.toBlob(r,'image/jpeg',q));
+
+go.onclick=async()=>{
+  const w=+W.value,h=+H.value,mn=+MIN.value*1024,mx=+MAX.value*1024;
+  if(!w||!h||!mx||mn>mx){alert('Width, height, size values correct ga enter cheyandi.');return}
+  draw(w,h);
+  // Binary search for the highest quality that stays under max size
+  let lo=0.05,hi=0.98,best=null;
+  for(let i=0;i<9;i++){
+    const q=(lo+hi)/2,b=await toBlob(q);
+    if(b.size<=mx){best=b;lo=q}else hi=q;
+  }
+  if(!best)best=await toBlob(0.05);
+  blob=best;
+  const kb=(blob.size/1024).toFixed(1);
+  let msg,cls;
+  if(blob.size>mx){msg=`${kb} KB. Max ${MAX.value} KB kante ekkuva undi. Width/height tagginchandi leka Crop method try cheyandi.`;cls='bad'}
+  else if(blob.size<mn){msg=`${kb} KB. Min ${MIN.value} KB kante takkuva undi. Pedda resolution image tho try cheyandi.`;cls='bad'}
+  else{msg=`${w}×${h} px, ${kb} KB. Size correct!`;cls='ok'}
+  stat.textContent=msg;stat.className='stat '+cls;
+  out.classList.add('show');
+  dl.disabled=false;
+  out.scrollIntoView({behavior:'smooth',block:'nearest'});
+};
+
+dl.onclick=()=>{
+  if(!blob)return;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=name+'_'+W.value+'x'+H.value+'.jpg';
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+};
+</script>
+</body>
+</html>
